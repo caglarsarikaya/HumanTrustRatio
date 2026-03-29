@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: Uvicorn",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Python314\\python.exe",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--reload",
+        "--port", "8000"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "jinja": true,
+      "justMyCode": true
+    },
+    {
+      "name": "Backend: Uvicorn (All Code)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Python314\\python.exe",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--reload",
+        "--port", "8000"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "jinja": true,
+      "justMyCode": false
+    }
+  ]
+}
