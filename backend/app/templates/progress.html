@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Analysing — Proof of Humanity{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-2xl px-6 py-16" id="progress-root" data-id="{{ analysis_id }}">
+  <div class="text-center mb-10">
+    <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">Analysing Resume</h1>
+    <p class="text-gray-500 mt-2" id="step-counter">Preparing&hellip;</p>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="w-full h-3 rounded-full bg-gray-200 overflow-hidden mb-10 shadow-inner">
+    <div id="progress-bar"
+         class="h-full rounded-full bg-brand-500 transition-all duration-700 ease-out"
+         style="width: 0%"></div>
+  </div>
+
+  <!-- Step cards -->
+  <div class="space-y-4" id="step-list">
+    <div class="step-card flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-step="1">
+      <div class="step-icon shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-bold">1</div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-700">Parsing resume</p>
+        <p class="text-xs text-gray-400">Extracting text from your document</p>
+      </div>
+      <div class="step-status text-sm text-gray-400">Waiting</div>
+    </div>
+
+    <div class="step-card flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-step="2">
+      <div class="step-icon shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-bold">2</div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-700">Classifying profile</p>
+        <p class="text-xs text-gray-400">Identifying name, skills, experience</p>
+      </div>
+      <div class="step-status text-sm text-gray-400">Waiting</div>
+    </div>
+
+    <div class="step-card flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-step="3">
+      <div class="step-icon shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-bold">3</div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-700">Searching the web</p>
+        <p class="text-xs text-gray-400">Gathering digital footprints online</p>
+      </div>
+      <div class="step-status text-sm text-gray-400">Waiting</div>
+    </div>
+
+    <div class="step-card flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" data-step="4">
+      <div class="step-icon shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-bold">4</div>
+      <div class="flex-1">
+        <p class="font-semibold text-gray-700">Evaluating trust index</p>
+        <p class="text-xs text-gray-400">Comparing resume claims vs online evidence</p>
+      </div>
+      <div class="step-status text-sm text-gray-400">Waiting</div>
+    </div>
+  </div>
+
+  <!-- Error box (hidden by default) -->
+  <div id="error-box" class="mt-8 hidden rounded-xl bg-red-50 border border-red-200 p-4 text-red-600 text-sm text-center"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/progress.js"></script>
+{% endblock %}

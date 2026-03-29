@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Upload Resume — Proof of Humanity{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-2xl px-6 py-16">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 mb-4">Verify a Resume</h1>
+    <p class="text-lg text-gray-500 max-w-lg mx-auto">
+      Upload a PDF or DOCX resume. Our agents will extract, classify, search the
+      web for digital footprints, and assign a <span class="text-brand-600 font-semibold">Trust Index</span>.
+    </p>
+  </div>
+
+  <form
+    id="upload-form"
+    enctype="multipart/form-data"
+  >
+    <div
+      id="drop-zone"
+      class="relative border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center bg-white
+             hover:border-brand-400 hover:bg-brand-50/50 transition-all cursor-pointer shadow-sm"
+    >
+      <svg class="mx-auto h-12 w-12 text-brand-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/>
+      </svg>
+      <p class="text-gray-500 mb-2">
+        <span class="font-medium text-gray-700">Click to upload</span> or drag &amp; drop
+      </p>
+      <p class="text-sm text-gray-400">PDF or DOCX &bull; Max 10 MB</p>
+      <input
+        id="file-input"
+        type="file"
+        name="file"
+        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      />
+    </div>
+
+    <div id="file-name" class="mt-4 text-center text-sm text-brand-600 font-medium hidden"></div>
+
+    <button
+      id="submit-btn"
+      type="submit"
+      disabled
+      class="mt-6 w-full rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white shadow-md
+             hover:bg-brand-700 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+    >
+      Analyse Resume
+    </button>
+  </form>
+
+  <div id="error-box" class="mt-6 hidden rounded-xl bg-red-50 border border-red-200 p-4 text-red-600 text-sm"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/upload.js"></script>
+{% endblock %}
