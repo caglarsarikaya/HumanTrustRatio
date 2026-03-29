@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     """Application-wide settings loaded from environment / .env file."""
 
     gemini_api_key: str = ""
+    serpapi_api_key: str = ""
+    search_engine: str = "duckduckgo"  # "duckduckgo" or "serpapi"
     app_title: str = "Proof of Humanity"
     debug: bool = True
 

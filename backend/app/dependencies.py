@@ -18,7 +18,9 @@ from app.providers.ai.gemini_provider import GeminiProvider
 from app.providers.parsers.docx_parser import DocxParser
 from app.providers.parsers.pdf_parser import PdfParser
 from app.providers.scraper.bs4_scraper import BS4Scraper
+from app.core.interfaces.search_engine import SearchEngine
 from app.providers.search.duckduckgo_engine import DuckDuckGoEngine
+from app.providers.search.serpapi_engine import SerpApiEngine
 from app.services.ai_service import AIService
 from app.services.pipeline_service import PipelineService
 
@@ -32,10 +34,21 @@ def get_ai_service() -> AIService:
     return AIService(provider)
 
 
+def _build_search_engine() -> SearchEngine:
+    engine_name = settings.search_engine.lower()
+    if engine_name == "serpapi":
+        if not settings.serpapi_api_key:
+            raise ValueError("SERPAPI_API_KEY is required when search_engine=serpapi")
+        logger.info("Using SerpAPI search engine")
+        return SerpApiEngine(api_key=settings.serpapi_api_key)
+    logger.info("Using DuckDuckGo search engine")
+    return DuckDuckGoEngine()
+
+
 def get_pipeline() -> PipelineService:
     logger.info("Assembling pipeline...")
     ai = get_ai_service()
-    search = DuckDuckGoEngine()
+    search = _build_search_engine()
     scraper = BS4Scraper()
 
     resolver = ResumeResolverAgent(parsers=[PdfParser(), DocxParser()])
