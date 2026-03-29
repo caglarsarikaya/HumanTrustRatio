@@ -1,8 +1,8 @@
-# Proof of Humanity — System Overview
+# Verifolio — System Overview
 
 ## What It Does
 
-Proof of Humanity (PoH) is a multi-agent pipeline that verifies the authenticity of a resume by cross-referencing its claims against publicly available digital footprints on the web. The end result is a **Trust Index** score (0–100) with a per-category breakdown.
+Verifolio is a multi-agent pipeline that verifies the authenticity of a resume by cross-referencing its claims against publicly available digital footprints on the web. The end result is a **Trust Index** score (0–100) with a per-category breakdown.
 
 ---
 

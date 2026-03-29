@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Proof of Humanity{% endblock %}</title>
+  <title>{% block title %}Verifolio{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -32,8 +32,8 @@
   <div class="min-h-full flex flex-col">
     <header class="border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <div class="mx-auto max-w-5xl flex items-center justify-between px-6 py-4">
-        <a href="/" class="text-xl font-bold tracking-tight text-gray-900">
-          <span class="text-brand-600">PoH</span> &mdash; Proof of Humanity
+        <a href="/" class="text-3xl font-extrabold tracking-tight text-gray-900">
+          <span class="text-brand-600">Verifolio</span>
         </a>
         <a href="/"
            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white
@@ -51,8 +51,15 @@
       {% block content %}{% endblock %}
     </main>
 
-    <footer class="border-t border-gray-200 bg-white/60 py-6 text-center text-sm text-gray-400">
-      HackPSU 2026
+    <footer class="border-t border-gray-200 bg-white/60 py-6 text-center text-sm text-gray-400 space-y-2">
+      <p class="flex items-center justify-center gap-1.5 text-amber-600">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v2m0 4h.01M12 2L2 20h20L12 2z"/>
+        </svg>
+        This is an AI-powered system and may produce inaccurate results. Always verify findings independently.
+      </p>
+      <p>HackPSU 2026</p>
     </footer>
   </div>
   {% block scripts %}{% endblock %}

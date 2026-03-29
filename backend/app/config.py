@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     serpapi_api_key: str = ""
     search_engine: str = "duckduckgo"  # "duckduckgo" or "serpapi"
-    app_title: str = "Proof of Humanity"
+    app_title: str = "Verifolio"
     debug: bool = True
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

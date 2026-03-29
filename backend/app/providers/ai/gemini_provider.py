@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import google.generativeai as genai
@@ -70,5 +71,9 @@ class GeminiProvider(AIProvider):
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            logger.error("Gemini returned non-JSON: %s", text[:200])
-            raise
+            sanitized = re.sub(r",\s*([}\]])", r"\1", text)
+            try:
+                return json.loads(sanitized)
+            except json.JSONDecodeError:
+                logger.error("Gemini returned non-JSON: %s", text[:200])
+                raise
