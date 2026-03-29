@@ -38,18 +38,18 @@ app.include_router(analysis_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/progress/{analysis_id}", response_class=HTMLResponse)
 async def progress_page(request: Request, analysis_id: str):
     return templates.TemplateResponse(
-        "progress.html", {"request": request, "analysis_id": analysis_id}
+        request, "progress.html", {"analysis_id": analysis_id}
     )
 
 
 @app.get("/result/{analysis_id}", response_class=HTMLResponse)
 async def result_page(request: Request, analysis_id: str):
     return templates.TemplateResponse(
-        "result.html", {"request": request, "analysis_id": analysis_id}
+        request, "result.html", {"analysis_id": analysis_id}
     )

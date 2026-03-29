@@ -17,7 +17,11 @@ _SYSTEM_PROMPT = (
     "resume profile and their digital footprints gathered from the web.\n\n"
     "Your job:\n"
     "1. Compare the resume claims against the online evidence.\n"
-    "2. For each category (identity, employment, skills, education, "
+    "2. Use each footprint's identity_match_score (0 to 10) to judge whether the page is about "
+    "the same person.\n"
+    "3. Use each footprint's strong_evidence_score (0 to 10) to judge how strongly the page "
+    "supports or contradicts resume claims.\n"
+    "4. For each category (identity, employment, skills, education, "
     "online_presence), assign a score from 0 to 100.\n"
     "3. Flag ONLY when you find concrete evidence that CONTRADICTS a resume claim.\n"
     "4. Compute an overall trust score (weighted average).\n"
@@ -40,6 +44,8 @@ _SYSTEM_PROMPT = (
     "- A score of 50 means no evidence either way (neutral). Scores below 50 "
     "require actual contradicting evidence. Scores above 50 mean supporting "
     "evidence was found."
+    "Do not rely on pages with weak identity_match_score "
+    "as strong evidence for trust."
 )
 
 _SCHEMA: dict = {
@@ -96,7 +102,9 @@ class TrustEvaluatorAgent(BaseAgent):
             f"Platform: {fp.platform}\n"
             f"Summary: {fp.summary}\n"
             f"Matched claims: {', '.join(fp.matched_claims)}\n"
-            f"Relevance: {fp.relevance_score:.1%}"
+            f"Strong evidence: {fp.strong_evidence_score:.1f}/10\n"
+            f"Identity match: {fp.identity_match_score:.1f}/10\n"
+            "Use this page only to the extent the identity match is credible."
             for fp in footprints
         )
 
@@ -127,6 +135,9 @@ class TrustEvaluatorAgent(BaseAgent):
             "Now produce the trust index. Remember: only flag claims where "
             "you see CONTRADICTING evidence. If no evidence was found for a "
             "claim, that is neutral — do NOT flag it."
+            "Treat identity_match_score as a gate on how much a page should influence trust. "
+            "Treat strong_evidence_score as the strength of support or contradiction once identity is credible.\n\n"
+            "Now produce the trust index."
         )
 
         logger.info("Sending prompt to AI for trust evaluation...")

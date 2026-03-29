@@ -59,19 +59,19 @@ _QUERY_GEN_SCHEMA: dict = {
 }
 
 _SUMMARISE_SYSTEM = (
-    "You are verifying a person's online presence. Given a web page's text "
-    "and the person's profile, extract any information that confirms or "
-    "contradicts the person's resume claims. Be concise.\n\n"
-    "IDENTITY MATCHING RULES (critical):\n"
-    "- You will receive the person's full profile: name, email, location, "
-    "all companies, education, and skills.\n"
-    "- If the page mentions someone with the same name but DIFFERENT companies, "
-    "DIFFERENT job titles, DIFFERENT education, or DIFFERENT industry, this is "
-    "a DIFFERENT PERSON. Set relevance_score to 0.\n"
-    "- Only consider a page relevant (relevance_score > 0) if at least ONE "
-    "identifying detail matches beyond just the name — e.g. same company, "
-    "same university, same email, same city, same GitHub username.\n"
-    "- A common name can belong to many people. Name match alone is NOT enough."
+    "You are verifying a person's online presence against a resume profile. "
+    "Given a web page's text and the person's profile, extract evidence that "
+    "confirms or contradicts the resume claims.\n\n"
+    "Score two things on a 0 to 10 scale:\n"
+    "- strong_evidence_score: How strongly this page supports or contradicts "
+    "the specific resume claims. High scores require concrete, resume-aligned "
+    "evidence such as matching job history, education, projects, skills, or "
+    "official profile details. Weak, generic, or ambiguous mentions should score low.\n"
+    "- identity_match_score: How likely this page is about the same exact person. "
+    "Use name, employer, location, title, school, links, and other identity anchors. "
+    "If the page could plausibly be a different person with the same or similar name, score low.\n\n"
+    "Be skeptical. Do not inflate scores. A page can have strong evidence but weak identity match, "
+    "or strong identity match but weak resume evidence. Be concise."
 )
 
 _SUMMARISE_SCHEMA: dict = {
@@ -80,8 +80,16 @@ _SUMMARISE_SCHEMA: dict = {
         "platform": {"type": "string"},
         "summary": {"type": "string"},
         "matched_claims": {"type": "array", "items": {"type": "string"}},
-        "relevance_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "strong_evidence_score": {"type": "number", "minimum": 0, "maximum": 10},
+        "identity_match_score": {"type": "number", "minimum": 0, "maximum": 10},
     },
+    "required": [
+        "platform",
+        "summary",
+        "matched_claims",
+        "strong_evidence_score",
+        "identity_match_score",
+    ],
 }
 
 _URL_RE = re.compile(r"https?://[^\s,\"'<>]+|(?:[\w-]+\.)+(?:com|org|net|io|dev|me|co)[/\w.-]*")
@@ -174,9 +182,18 @@ class FootprintCollectorAgent(BaseAgent):
             else:
                 fail_count += 1
                 continue
-
-            if fp and fp.relevance_score > 0.1:
-                logger.info("  -> Footprint found (relevance=%.0f%%)", fp.relevance_score * 100)
+            if not isinstance(page, ScrapedPage) or not page.success:
+                fail_count += 1
+                continue
+            success_count += 1
+            logger.info("Analysing page: %s (%d chars)", page.url, len(page.text))
+            fp = await self._analyse_page(page, profile)
+            if fp:
+                logger.info(
+                    "  -> Footprint found (evidence=%.1f/10 identity=%.1f/10)",
+                    fp.strong_evidence_score,
+                    fp.identity_match_score,
+                )
                 collector_result.footprints.append(fp)
             elif fp:
                 logger.info("  -> Skipped low-relevance footprint (%.0f%%) — likely different person", fp.relevance_score * 100)
@@ -297,4 +314,3 @@ class FootprintCollectorAgent(BaseAgent):
         queries.append(f'"{name}" LinkedIn OR GitHub OR portfolio')
 
         return queries
-

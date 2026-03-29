@@ -5,7 +5,7 @@
       "name": "Backend: Uvicorn",
       "type": "debugpy",
       "request": "launch",
-      "python": "C:\\Python314\\python.exe",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
       "module": "uvicorn",
       "args": [
         "app.main:app",
@@ -21,7 +21,7 @@
       "name": "Backend: Uvicorn (All Code)",
       "type": "debugpy",
       "request": "launch",
-      "python": "C:\\Python314\\python.exe",
+      "python": "${workspaceFolder}/backend/venv/Scripts/python.exe",
       "module": "uvicorn",
       "args": [
         "app.main:app",

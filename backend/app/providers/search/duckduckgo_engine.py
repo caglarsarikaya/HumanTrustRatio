@@ -32,7 +32,7 @@ class DuckDuckGoEngine(SearchEngine):
     def _sync_search(query: str, max_results: int) -> list[dict]:
         try:
             ddgs = DDGS()
-            return ddgs.text(query, max_results=max_results)
+            return ddgs.text(query, max_results=max_results, backend="google")
         except Exception:
             logger.exception("DuckDuckGo search failed for query: %s", query)
             return []

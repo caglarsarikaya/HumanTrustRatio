@@ -30,6 +30,12 @@
     return "bg-red-400";
   }
 
+  function scoreBadgeClass(score) {
+    if (score >= 7.5) return "text-mint-600 bg-mint-50";
+    if (score >= 5) return "text-amber-500 bg-amber-50";
+    return "text-red-500 bg-red-50";
+  }
+
   /* ── accordion builder ─────────────────────────────────── */
 
   function accordion(title, badge, body) {
@@ -225,11 +231,14 @@
                 <a href="${fp.source_url}" target="_blank" rel="noopener"
                    class="text-xs text-brand-600 hover:text-brand-700 hover:underline break-all">${esc(fp.source_url)}</a>
               </div>
-              <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold ${
-                scoreColor(fp.relevance_score * 100)
-              } ${
-                fp.relevance_score >= 0.75 ? "bg-mint-50" : fp.relevance_score >= 0.5 ? "bg-amber-50" : "bg-red-50"
-              }">${(fp.relevance_score * 100).toFixed(0)}%</span>
+              <div class="shrink-0 flex flex-col gap-1 text-right">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${scoreBadgeClass(fp.strong_evidence_score ?? 0)}">
+                  Evidence ${(fp.strong_evidence_score ?? 0).toFixed(1)}/10
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold ${scoreBadgeClass(fp.identity_match_score ?? 0)}">
+                  Identity ${(fp.identity_match_score ?? 0).toFixed(1)}/10
+                </span>
+              </div>
             </div>
             ${fp.summary ? `<p class="text-xs text-gray-500 mt-2 leading-relaxed">${esc(fp.summary)}</p>` : ""}
             ${fp.matched_claims && fp.matched_claims.length ? `

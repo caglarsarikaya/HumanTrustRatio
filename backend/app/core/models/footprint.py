@@ -39,4 +39,5 @@ class DigitalFootprint(_SafeBase):
     platform: str = ""
     summary: str = ""
     matched_claims: list[str] = []
-    relevance_score: float = 0.0
+    strong_evidence_score: float = 0.0
+    identity_match_score: float = 0.0
