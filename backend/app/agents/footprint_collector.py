@@ -27,26 +27,22 @@ class CollectorResult:
     footprints: list[DigitalFootprint] = field(default_factory=list)
 
 _QUERY_GEN_SYSTEM = (
-    "You are an OSINT query-generation assistant for resume verification. "
-    "Given a person's resume profile, generate 2-4 high-precision web search queries"
-    "to find evidence of that person's online footprint.\n\n"
-    "Objective:\n"
-    "- Maximize the chance that each query returns results about this exact person.\n"
-    "- Prefer identity-confirming sources such as LinkedIn, GitHub, employer pages, "
-    "university pages, personal websites, conference bios, and publication profiles.\n\n"
-    "Rules:\n"
-    "- Most queries must include the person's full name in quotes.\n"
-    "- Use one strong disambiguating attribute per query when available: employer, "
-    "university, location, title/specialty, GitHub username, company domain, or email.\n"
-    "- Queries must be short, realistic search-engine queries.\n"
-    "- Queries should be diverse; do not output near-duplicates.\n"
-    "- If email is available, include at most one email-based query if it is likely to be useful.\n"
-    "- Prefer site-restricted queries when helpful, such as site:linkedin.com/in, site:github.com, "
-    "site:company.com, or a university domain.\n"
-    "- Avoid generic or low-signal queries.\n"
-    "- Do not stuff many attributes into one query.\n"
-    "- If the profile is sparse, use fewer queries and rely on the strongest available anchors.\n"
-    "- If the name is common, prioritize stronger disambiguators like employer, university, or location."
+    "You are a resume analyst. Given a person's resume profile, generate TARGETED "
+    "search queries to find evidence of that person's online footprint.\n\n"
+    "RULES:\n"
+    "- Every query MUST include the person's full name in quotes.\n"
+    "- Each query should also include at least one specific identifier: "
+    "a company name, university name, city, email, or a URL from their resume.\n"
+    "- Do NOT generate broad queries with just a name and generic terms.\n"
+    "- Prefer narrow queries that will only match the specific person.\n\n"
+    "Good queries:\n"
+    '- \'"John Smith" "Acme Corp"\'\n'
+    '- \'"John Smith" "MIT" Boston\'\n'
+    '- \'"john.smith@email.com"\'\n'
+    '- \'site:github.com "johnsmith"\'\n\n'
+    "Bad queries (too broad, will match wrong people):\n"
+    '- \'"John Smith" software engineer\'\n'
+    '- \'"John Smith" developer portfolio\'\n'
 )
 
 _QUERY_GEN_SCHEMA: dict = {
@@ -65,7 +61,17 @@ _QUERY_GEN_SCHEMA: dict = {
 _SUMMARISE_SYSTEM = (
     "You are verifying a person's online presence. Given a web page's text "
     "and the person's profile, extract any information that confirms or "
-    "contradicts the person's resume claims. Be concise."
+    "contradicts the person's resume claims. Be concise.\n\n"
+    "IDENTITY MATCHING RULES (critical):\n"
+    "- You will receive the person's full profile: name, email, location, "
+    "all companies, education, and skills.\n"
+    "- If the page mentions someone with the same name but DIFFERENT companies, "
+    "DIFFERENT job titles, DIFFERENT education, or DIFFERENT industry, this is "
+    "a DIFFERENT PERSON. Set relevance_score to 0.\n"
+    "- Only consider a page relevant (relevance_score > 0) if at least ONE "
+    "identifying detail matches beyond just the name — e.g. same company, "
+    "same university, same email, same city, same GitHub username.\n"
+    "- A common name can belong to many people. Name match alone is NOT enough."
 )
 
 _SUMMARISE_SCHEMA: dict = {
@@ -121,6 +127,11 @@ class FootprintCollectorAgent(BaseAgent):
             collector_result.search_results.extend(results)
             all_urls.extend(r.url for r in results)
 
+        snippet_map: dict[str, SearchResult] = {}
+        for sr in collector_result.search_results:
+            if sr.url not in snippet_map:
+                snippet_map[sr.url] = sr
+
         unique_urls = list(dict.fromkeys(all_urls))[:_MAX_PAGES_TO_SCRAPE]
         logger.info("Scraping %d unique pages (from %d total URLs)", len(unique_urls), len(all_urls))
 
@@ -131,25 +142,50 @@ class FootprintCollectorAgent(BaseAgent):
 
         success_count = 0
         fail_count = 0
-        for page in pages:
-            if isinstance(page, Exception):
+        snippet_fallback_count = 0
+        for i, page in enumerate(pages):
+            url = unique_urls[i]
+            scraped_ok = (
+                isinstance(page, ScrapedPage)
+                and page.success
+                and len(page.text.strip()) > 20
+            )
+
+            if scraped_ok:
+                success_count += 1
+                logger.info("Analysing page: %s (%d chars)", page.url, len(page.text))
+                fp = await self._analyse_page(page, profile)
+            elif url in snippet_map:
+                sr = snippet_map[url]
+                if sr.snippet.strip():
+                    snippet_fallback_count += 1
+                    fallback_text = f"Title: {sr.title}\nSnippet: {sr.snippet}"
+                    logger.info(
+                        "Scrape failed for %s — using search snippet as fallback (%d chars)",
+                        url, len(fallback_text),
+                    )
+                    fallback_page = ScrapedPage(
+                        url=url, title=sr.title, text=fallback_text,
+                    )
+                    fp = await self._analyse_page(fallback_page, profile)
+                else:
+                    fail_count += 1
+                    continue
+            else:
                 fail_count += 1
                 continue
-            if not isinstance(page, ScrapedPage) or not page.success:
-                fail_count += 1
-                continue
-            success_count += 1
-            logger.info("Analysing page: %s (%d chars)", page.url, len(page.text))
-            fp = await self._analyse_page(page, profile)
-            if fp:
+
+            if fp and fp.relevance_score > 0.1:
                 logger.info("  -> Footprint found (relevance=%.0f%%)", fp.relevance_score * 100)
                 collector_result.footprints.append(fp)
+            elif fp:
+                logger.info("  -> Skipped low-relevance footprint (%.0f%%) — likely different person", fp.relevance_score * 100)
             else:
                 logger.info("  -> No relevant footprint")
 
         logger.info(
-            "Footprint collection done: %d scraped, %d failed, %d footprints found",
-            success_count, fail_count, len(collector_result.footprints),
+            "Footprint collection done: %d scraped, %d snippet-fallbacks, %d failed, %d footprints found",
+            success_count, snippet_fallback_count, fail_count, len(collector_result.footprints),
         )
         return collector_result
 
@@ -204,12 +240,30 @@ class FootprintCollectorAgent(BaseAgent):
             system_prompt=_SUMMARISE_SYSTEM,
             response_format="json",
         )
+        experience_lines = "\n".join(
+            f"  - {e.title} at {e.company} ({e.duration})"
+            for e in profile.experience
+        )
+        education_lines = "\n".join(
+            f"  - {ed.degree} in {ed.field} from {ed.institution} ({ed.year})"
+            for ed in profile.education
+        )
+        companies = [e.company for e in profile.experience if e.company]
         prompt = (
-            f"Person: {profile.full_name}, Title: {profile.title}\n"
-            f"Skills: {', '.join(profile.skills[:10])}\n\n"
-            f"Web page URL: {page.url}\n"
-            f"Web page title: {page.title}\n"
-            f"Web page content:\n{truncated_text}"
+            f"## Person's Resume Profile\n"
+            f"Name: {profile.full_name}\n"
+            f"Email: {profile.email}\n"
+            f"Title: {profile.title}\n"
+            f"Location: {profile.location}\n"
+            f"Companies worked at: {', '.join(companies)}\n"
+            f"Experience:\n{experience_lines}\n"
+            f"Education:\n{education_lines}\n"
+            f"Skills: {', '.join(profile.skills[:10])}\n"
+            f"Links: {', '.join(profile.links)}\n\n"
+            f"## Web Page to Analyse\n"
+            f"URL: {page.url}\n"
+            f"Title: {page.title}\n"
+            f"Content:\n{truncated_text}"
         )
 
         try:
@@ -230,15 +284,15 @@ class FootprintCollectorAgent(BaseAgent):
         if profile.email:
             queries.append(f'"{profile.email}"')
 
-        if profile.experience:
-            latest = profile.experience[0]
-            if latest.company:
-                queries.append(f'"{name}" {latest.company}')
+        for exp in profile.experience:
+            if exp.company:
+                queries.append(f'"{name}" "{exp.company}"')
 
-        if profile.education:
-            latest_edu = profile.education[0]
-            if latest_edu.institution:
-                queries.append(f'"{name}" {latest_edu.institution}')
+        for edu in profile.education:
+            if edu.institution:
+                queries.append(f'"{name}" "{edu.institution}"')
+            if edu.institution and profile.location:
+                queries.append(f'"{name}" "{edu.institution}" {profile.location}')
 
         queries.append(f'"{name}" LinkedIn OR GitHub OR portfolio')
 

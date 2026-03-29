@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 
 from app.agents.base_agent import BaseAgent
 from app.core.models.ai_config import AIServiceConfig, ModelTier
@@ -18,11 +19,27 @@ _SYSTEM_PROMPT = (
     "1. Compare the resume claims against the online evidence.\n"
     "2. For each category (identity, employment, skills, education, "
     "online_presence), assign a score from 0 to 100.\n"
-    "3. Flag any discrepancies or red flags.\n"
+    "3. Flag ONLY when you find concrete evidence that CONTRADICTS a resume claim.\n"
     "4. Compute an overall trust score (weighted average).\n"
     "5. Provide clear reasoning for each score.\n\n"
-    "Be fair but thorough. Absence of evidence is not evidence of fraud, "
-    "but should lower confidence."
+    "CRITICAL RULES:\n"
+    "- Absence of evidence is NOT a red flag. If you cannot find information "
+    "about a claim, that is NEUTRAL — do NOT lower the score or flag it. "
+    "Most people and companies do not publish everything online.\n"
+    "- Only flag something if you find DIRECT CONTRADICTING evidence "
+    "(e.g. a source says they worked at Company X from 2018-2020, but the "
+    "resume says 2016-2021).\n"
+    "- 'Unverified' is NOT the same as 'contradicted'. Never flag a claim "
+    "simply because you could not find online confirmation.\n"
+    "- When you find a profile with the same name but different career details, "
+    "consider that it may be a DIFFERENT PERSON with the same name. Only flag "
+    "it as conflicting if there is strong evidence it is the SAME person "
+    "(e.g. same photo, same email, same location, overlapping employment).\n"
+    "- For employment dates, use today's date to determine if a date is in "
+    "the past or future. Today's date will be provided in the prompt.\n"
+    "- A score of 50 means no evidence either way (neutral). Scores below 50 "
+    "require actual contradicting evidence. Scores above 50 mean supporting "
+    "evidence was found."
 )
 
 _SCHEMA: dict = {
@@ -86,7 +103,10 @@ class TrustEvaluatorAgent(BaseAgent):
         if not footprint_summaries:
             footprint_summaries = "(No digital footprints were found.)"
 
+        today = date.today().strftime("%B %d, %Y")
+
         prompt = (
+            f"## Today's Date\n{today}\n\n"
             "## Resume Profile\n"
             f"Name: {profile.full_name}\n"
             f"Title: {profile.title}\n"
@@ -104,7 +124,9 @@ class TrustEvaluatorAgent(BaseAgent):
             )
             + f"\nLinks: {', '.join(profile.links)}\n\n"
             f"## Digital Footprints\n{footprint_summaries}\n\n"
-            "Now produce the trust index."
+            "Now produce the trust index. Remember: only flag claims where "
+            "you see CONTRADICTING evidence. If no evidence was found for a "
+            "claim, that is neutral — do NOT flag it."
         )
 
         logger.info("Sending prompt to AI for trust evaluation...")
